@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ujian Sekolah Informatika</title>
+    <!-- Memuat Tailwind CSS untuk desain tampilan -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Mencegah scroll ganda di dalam iframe Google Sites */
+        body { margin: 0; overflow-x: hidden; }
+        .hidden-stage { display: none !important; }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800">
+
+    <!-- ==================== TAHAP 1: LOGIN ==================== -->
+    <div id="stage-login" class="min-h-screen bg-blue-50 flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-xl shadow-xl w-full max-w-lg border-t-8 border-blue-600">
+            <div class="text-center mb-8">
+                <h1 class="text-2xl font-bold text-gray-800">Ujian Sekolah Kelas IX</h1>
+                <h2 class="text-lg font-semibold text-gray-600">Tahun Ajaran 2025/2026</h2>
+                <p class="text-blue-600 font-bold mt-2">SMP NEGERI 1 KARIMUN</p>
+                <p class="text-sm text-gray-500">Bidang Studi: Informatika</p>
+            </div>
+            
+            <form id="form-login" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
+                    <input id="input-nama" required type="text" class="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-400 focus:outline-none" placeholder="Masukkan Nama Lengkap" />
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Jenis Kelamin</label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center"><input required type="radio" name="jk" value="Laki-laki" class="mr-2"/> Laki-laki</label>
+                        <label class="flex items-center"><input required type="radio" name="jk" value="Perempuan" class="mr-2"/> Perempuan</label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Kelas</label>
+                    <select id="input-kelas" required class="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-400 focus:outline-none">
+                        <option value="">-- Pilih Kelas --</option>
+                        <option value="9.1">Kelas 9.1</option>
+                        <option value="9.2">Kelas 9.2</option>
+                        <option value="9.3">Kelas 9.3</option>
+                        <option value="9.4">Kelas 9.4</option>
+                        <option value="9.5">Kelas 9.5</option>
+                        <option value="9.6">Kelas 9.6</option>
+                        <option value="9.7">Kelas 9.7</option>
+                        <option value="9.8">Kelas 9.8</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Token Ujian</label>
+                    <input id="input-token" required type="text" class="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-400 focus:outline-none font-mono tracking-widest uppercase" placeholder="MASUKKAN TOKEN" />
+                </div>
+
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded hover:bg-blue-700 transition mt-6">
+                    Mulai Ujian
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== TAHAP 2: UJIAN ==================== -->
+    <div id="stage-exam" class="hidden-stage min-h-screen bg-gray-100 flex flex-col md:flex-row relative">
+        
+        <!-- Modal Peringatan Curang -->
+        <div id="modal-cheat" class="hidden-stage absolute inset-0 bg-red-900 bg-opacity-90 flex items-center justify-center z-50 p-4">
+            <div class="bg-white p-6 rounded-lg max-w-md text-center shadow-2xl border-4 border-red-500">
+                <h2 class="text-2xl font-bold text-red-600 mb-2">⚠️ PERINGATAN KECURANGAN!</h2>
+                <p class="text-gray-700 mb-4">Sistem mendeteksi Anda keluar dari layar ujian. Poin Anda otomatis <strong>dikurangi 2 poin</strong>.</p>
+                <p class="text-sm bg-red-100 text-red-800 p-2 rounded mb-4">Total Pelanggaran: <span id="modal-cheat-count"></span> kali (-<span id="modal-cheat-points"></span> Poin)</p>
+                <button onclick="hideCheatModal()" class="bg-red-600 text-white px-6 py-2 rounded font-bold hover:bg-red-700">
+                    Saya Mengerti
+                </button>
+            </div>
+        </div>
+
+        <!-- Modal Konfirmasi Kirim -->
+        <div id="modal-submit" class="hidden-stage absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white p-6 rounded-lg max-w-md w-full text-center shadow-2xl">
+                <h2 class="text-xl font-bold text-gray-800 mb-2">Konfirmasi Pengumpulan</h2>
+                
+                <div id="submit-warning" class="hidden-stage bg-yellow-100 text-yellow-800 p-3 rounded mb-4 text-sm text-left border border-yellow-300">
+                    ⚠️ <strong>Peringatan:</strong> Anda baru menjawab <span id="submit-answered"></span> dari 50 soal. Masih ada soal yang terlewat!
+                </div>
+                <p id="submit-safe" class="hidden-stage text-gray-600 mb-4">Anda sudah menjawab seluruh soal. Yakin ingin mengirim jawaban sekarang?</p>
+                
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button onclick="hideSubmitModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded font-semibold hover:bg-gray-300 transition">
+                        Batal, Kembali
+                    </button>
+                    <button onclick="executeSubmit()" id="btn-execute-submit" class="px-4 py-2 bg-green-600 text-white rounded font-bold hover:bg-green-700 transition">
+                        Ya, Kirim Sekarang
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Area Kiri: Soal -->
+        <div class="flex-1 p-4 md:p-8 flex flex-col md:h-screen overflow-y-auto">
+            <!-- Header Siswa -->
+            <div class="bg-white p-4 rounded shadow mb-4 flex justify-between items-center">
+                <div>
+                    <h2 id="display-nama" class="font-bold text-gray-800">Nama Siswa</h2>
+                    <p id="display-kelas" class="text-sm text-gray-500">Kelas: -</p>
+                </div>
+                <div class="text-right">
+                    <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">Informatika</span>
+                    <p class="text-sm font-bold text-red-500 mt-1">Peringatan: <span id="display-cheat">0</span></p>
+                </div>
+            </div>
+
+            <!-- Konten Soal -->
+            <div class="bg-white p-6 rounded shadow flex-1">
+                <h3 id="q-title" class="text-lg font-bold mb-4">Soal No. 1</h3>
+                
+                <div id="q-illustration" class="hidden-stage"></div>
+                
+                <p id="q-text" class="text-gray-800 mb-6 text-justify leading-relaxed whitespace-pre-wrap"></p>
+                
+                <div id="q-options" class="space-y-3">
+                    <!-- Opsi jawaban akan di-render menggunakan JavaScript -->
+                </div>
+            </div>
+
+            <!-- Tombol Navigasi Bawah -->
+            <div class="flex justify-between mt-4 pb-4 md:pb-0">
+                <button id="btn-prev" onclick="prevQ()" class="px-4 py-2 bg-gray-600 text-white rounded disabled:opacity-50">&laquo; Sebelumnya</button>
+                <button id="btn-next" onclick="nextQ()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Selanjutnya &raquo;</button>
+            </div>
+        </div>
+
+        <!-- Area Kanan: Navigasi Nomor -->
+        <div class="w-full md:w-80 bg-white p-4 shadow-lg md:h-screen overflow-y-auto border-l">
+            <h3 class="font-bold text-center text-gray-700 mb-4 border-b pb-2">Navigasi Soal</h3>
+            <div id="nav-grid" class="grid grid-cols-5 gap-2 mb-8">
+                <!-- Tombol nomor akan di-render menggunakan JavaScript -->
+            </div>
+
+            <button onclick="showSubmitModal()" id="btn-kirim" class="w-full bg-green-600 text-white font-bold py-3 rounded shadow hover:bg-green-700">
+                Kirim Jawaban (Selesai)
+            </button>
+            
+            <div class="mt-4 p-3 bg-yellow-50 rounded text-xs text-yellow-800 border border-yellow-200">
+                <strong>Info:</strong> Warna hijau berarti sudah dijawab. Pastikan semua soal terjawab sebelum menekan tombol Kirim.
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== TAHAP 3: HASIL ==================== -->
+    <div id="stage-result" class="hidden-stage min-h-screen bg-gray-100 flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-xl shadow-xl w-full max-w-md text-center">
+            <div class="text-green-500 text-5xl mb-4">✅</div>
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">Ujian Selesai!</h1>
+            <p class="text-gray-600 mb-6">Terima kasih, <strong id="res-nama"></strong>. Jawaban Anda telah dikirim ke sistem.</p>
+            
+            <div class="bg-gray-50 border rounded p-4 text-left space-y-2 mb-6">
+                <div class="flex justify-between"><span>Jawaban Benar:</span> <span id="res-benar" class="font-bold text-green-600"></span></div>
+                <div class="flex justify-between"><span>Jawaban Salah:</span> <span id="res-salah" class="font-bold text-red-500"></span></div>
+                <div class="flex justify-between"><span>Skor Awal:</span> <span id="res-kotor" class="font-bold"></span></div>
+                <div class="flex justify-between border-b pb-2"><span>Peringatan Kecurangan:</span> <span id="res-cheat" class="font-bold text-orange-500"></span></div>
+                <div class="flex justify-between text-lg pt-2"><span>Skor Akhir:</span> <span id="res-akhir" class="font-bold text-blue-600"></span></div>
+            </div>
+
+            <button onclick="window.location.reload()" class="text-sm text-blue-600 hover:underline">
+                Kembali ke Halaman Awal
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== JAVASCRIPT ==================== -->
+    <script>
+        // 1. DATA SOAL
+        const questions = [
+            { id: 1, text: "Informatika berasal dari perpaduan dua kata dalam bahasa Prancis, yaitu \"Information\" (informasi) dan \"Automatique\" (otomatis). Secara harfiah, informatika berarti pengolahan informasi secara otomatis menggunakan perangkat komputer. Definisi dari Informatika adalah ....", options: { A: "Ilmu tentang informasi computer", B: "Ilmu tentang angka dan hitungan", C: "Ilmu yang mempelajari pengolahan, penyimpanan, dan penyebaran informasi menggunakan teknologi komputer dan sistem informasi secara sistematis dan terstruktur", D: "Ilmu tentang komputer" }, answer: "C" },
+            { id: 2, text: "Keterampilan generik dalam Informatika adalah ....", options: { A: "Keterampilan khusus yang hanya diperlukan dalam penggunaan komputer", B: "Keterampilan yang hanya berlaku untuk guru dan tenaga pendidik", C: "Keterampilan yang diperlukan dalam kehidupan sehari-hari dan berlaku di berbagai bidang", D: "Keterampilan yang hanya berlaku dalam industri teknologi" }, answer: "C" },
+            { id: 3, text: "Dalam sebuah proyek kelompok, setiap anggota memiliki kemampuan yang berbeda. Ketua kelompok membagi tugas sesuai kemampuan masing-masing agar pekerjaan selesai lebih efektif. Sikap tersebut menunjukkan keterampilan generik berupa ..", options: { A: "Menghafal informasi", B: "Kolaborasi dan komunikasi", C: "Bermain media sosial", D: "Menyalin pekerjaan teman" }, answer: "B" },
+            { id: 4, text: "Cara yang tepat untuk menyimpan dan mengamankan kata sandi (password) saat menggunakan computer adalah", options: { A: "Menyimpannya dalam catatan yang terlihat oleh banyak orang", B: "Memberitahukannya kepada teman dekat", C: "Menyimpannya di lokasi yang aman dan hanya diketahui oleh pemiliknya", D: "Memberikannya kepada siapa saja yang memintanya" }, answer: "C" },
+            { id: 5, text: "Saat presentasi tugas informatika, seorang siswa menjelaskan data menggunakan diagram dan bahasa yang mudah dipahami sehingga audiens cepat mengerti isi presentasi. Keterampilan generik yang ditunjukkan adalah", options: { A: "Komunikasi efektif", B: "Menghafal data", C: "Penggunaan perangkat keras", D: "Instalasi aplikasi" }, answer: "A" },
+            { id: 6, text: "Kemampuan seseorang dalam memecahkan masalah dengan mengambil konsep/metode seperti seorang ahli teknologi informasi disebut....", options: { A: "Augmented Reality", B: "Artificial Intellegent", C: "Computational Thinking", D: "Augmented Intellegent" }, answer: "C" },
+            { id: 7, text: "Yang dimaksud dengan dekomposisi dalam berpikir komputasional adalah....", options: { A: "Menghapus informasi yang tidak penting", B: "Menyusun langkah-langkah penyelesaian", C: "Mengelompokkan masalah menjadi bagian-bagian kecil", D: "Mencari pola yang sama dalam masalah" }, answer: "C" },
+            { id: 8, text: "Seorang siswa ingin membersihkan kamar yang sangat berantakan. Ia membagi pekerjaan menjadi beberapa bagian seperti merapikan meja, menyapu lantai, dan menyusun buku agar lebih mudah dikerjakan. Konsep berpikir komputasional yang digunakan adalah ....", options: { A: "Abstraksi", B: "Dekomposisi", C: "Algoritma", D: "Simulasi" }, answer: "B" },
+            { id: 9, text: "Manakah dari contoh berikut yang menunjukkan pengenalan pola....", options: { A: "Mengurutkan angka dari terbesar ke terkecil", B: "Menemukan langkah-langkah membuat teh", C: "Menyadari bahwa setiap hari Senin kamu selalu bangun lebih pagi", D: "Memecah masalah menjadi bagian lebih kecil" }, answer: "C" },
+            { id: 10, text: "Berikut ini yang bukan termasuk langkah berpikir komputasional adalah...", options: { A: "Dekomposisi", B: "Abstraksi", C: "Imajinasi bebas", D: "Algoritma" }, answer: "C" },
+            { id: 11, text: "Seorang siswa membuat jadwal belajar dengan hanya mencatat kegiatan penting dan mengabaikan informasi yang tidak diperlukan. Dalam berpikir komputasional, tindakan tersebut termasuk", options: { A: "Dekomposisi", B: "Abstraksi", C: "Debugging", D: "Iterasi" }, answer: "B" },
+            { id: 12, text: "Saat menghadapi soal matematika yang rumit, kita memecah soal menjadi bagian-bagian kecil terlebih dahulu. Ini adalah contoh dari...", options: { A: "Abstraksi", B: "Dekomposisi", C: "Pengulangan", D: "Debugging" }, answer: "B" },
+            { id: 13, text: "Struktur data tree adalah...", options: { A: "Menyimpan dan mengatur data dengan menyusun secara terstruktur / hirarki", B: "Mengubah bentuk data", C: "Menganalisis data", D: "Menyimpan data" }, answer: "A" },
+            { id: 14, text: "Struktur data yang mempunyai bentuk bentuk bertingkat, terdiri atas root, parent dan child serta leaf disebut...", options: { A: "Root", B: "Graf", C: "Tree", D: "Array" }, answer: "C" },
+            { id: 15, text: "Sebuah sekolah membuat bagan organisasi yang menunjukkan hubungan antara kepala sekolah, wakil kepala sekolah, guru, dan siswa. Struktur data yang paling tepat digunakan untuk menggambarkan hubungan tersebut adalah ....", options: { A: "Array", B: "Tree", C: "Stack", D: "Queue" }, answer: "B" },
+            { id: 16, text: "Sebuah pohon keluarga menggambarkan hbungan antara kakek John, anak-anaknya Sarah dan Michael, serta cucunya Emily dan Jack (anak sarah) dan Sophie (anak Michael). Siapakah yang merupakan node akar dalam pohon ini.....", options: { A: "Sarah", B: "John", C: "Emily", D: "Sophie" }, answer: "B" },
+            { id: 17, text: "Perhatikan ilustrasi berikut:\n- Kota A terhubung ke Kota B dan Kota C\n- Kota B terhubung ke Kota D\n- Kota C terhubung ke Kota D\nStruktur hubungan tersebut lebih tepat direpresentasikan menggunakan...", options: { A: "Tree", B: "Graf", C: "Tabel", D: "Flowchart" }, answer: "B" },
+            { id: 18, text: "Berikut ini yang termasuk perangkat keras berupa input device adalah ...", options: { A: "Printer, mouse, scanner", B: "Keyboard, mouse, microfhone", C: "Monitor, keyboard, speaker", D: "Speaker, mouse, keyboard" }, answer: "B" },
+            { id: 19, text: "Perhatikan komponen berikut:\n1. Keyboard\n2. RAM\n3. Monitor\n4. Processor\nKomponen yang termasuk perangkat pemroses dalam sistem komputer adalah ....", options: { A: "1 dan 3", B: "2 dan 4", C: "1 dan 2", D: "3 dan 4" }, answer: "B" },
+            { id: 20, text: "Sebuah komputer di laboratorium sekolah dapat dinyalakan, tetapi aplikasi tidak bisa dibuka dan layar sering berhenti merespons. Setelah diperiksa, RAM komputer terlalu kecil untuk menjalankan program terbaru. Berdasarkan kondisi tersebut, kesimpulan yang tepat adalah", options: { A: "Perangkat lunak tidak memengaruhi kinerja komputer", B: "Kapasitas RAM memengaruhi kemampuan komputer menjalankan aplikasi", C: "Monitor menjadi penyebab utama komputer lambat", D: "Keyboard harus segera diganti" }, answer: "B" },
+            { id: 21, text: "Perangkat keras komputer yang berfungsi menampilkan hasil proses komputer dalam bentuk visual adalah ...", options: { A: "Keyboard", B: "Printer", C: "Monitor", D: "Mouse" }, answer: "C" },
+            { id: 22, text: "WWW (World Wide Website) adalah", options: { A: "Jaringan komputer lokal", B: "Kumpulan halaman web di internet", C: "Program antivirus", D: "Perangkat keras jaringan" }, answer: "B" },
+            { id: 23, text: "Web diakses oleh pengguna menggunakan perangkat lunak yang disebut peramban web dengan menuliskan alamat web yang disebut Uniform Resource Locators (URL), seperti https://www.informatika.org/ berfungsi untuk", options: { A: "Mengirim email", B: "Menyimpan data", C: "Menunjukkan alamat suatu website", D: "Menghubungkan komputer" }, answer: "C" },
+            { id: 24, text: "Pada URL ada yang bertuliskan http:// atau https://. Perbedaan pada Bagian \"https\" pada URL menunjukkan ...", options: { A: "Nama website", B: "Jenis browser", C: "Protokol komunikasi web yang aman", D: "Lokasi server" }, answer: "C" },
+            { id: 25, text: "Ketika mengakses situs web, sebuah peramban web akan membaca halaman-halaman web melalui protocol yang disebut HTTP (Hypertext Transfer Protocol) digunakan untuk", options: { A: "Mengamankan file lokal", B: "Mengatur tampilan web", C: "Mengirim data antara browser dan server", D: "Menyimpan alamat IP" }, answer: "C" },
+            { id: 26, text: "Jika sebuah website menggunakan HTTPS dibandingkan HTTP, maka keuntungannya...", options: { A: "Tidak bisa diakses", B: "Lebih lambat", C: "Data lebih aman", D: "Gratis digunakan" }, answer: "C" },
+            { id: 27, text: "Internet melahirkan interaksi dan transaksi secara elektronik. Mengirim pesan melalui email termasuk", options: { A: "Transaksi elektronik", B: "Interaksi elektronik", C: "Enkripsi data", D: "Proteksi file" }, answer: "B" },
+            { id: 28, text: "Jangkauan terbatas (satu gedung atau area kecil), Kecepatan tinggi, Biasanya dimiliki satu organisasi, dan Biaya relatif murah. Contonya Jaringan komputer dalam satu gedung sekolah. Pernyataan diatas merupakan ciri dari", options: { A: "WAN", B: "MAN", C: "LAN", D: "Internet" }, answer: "C" },
+            { id: 29, text: "Perhatikan ciri-ciri berikut:\n1) Jaringan yang mencakup satu kota\n2) Lebih luas dari LAN\n3) Contohnya Jaringan antar kampus dalam satu kota\nCiri-ciri jaringan diatas adalah ciri dari jaringan", options: { A: "LAN", B: "MAN", C: "WAN", D: "PAN" }, answer: "B" },
+            { id: 30, text: "Internet dan jaringan bank antar negara termasuk contoh dari jenis jaringan ...", options: { A: "LAN", B: "MAN", C: "WAN", D: "PAN" }, answer: "C" },
+            { id: 31, text: "Contoh penggunaan LAN yang tepat adalah", options: { A: "Jaringan antar negara", B: "Jaringan rumah", C: "Jaringan satelit", D: "Jaringan global" }, answer: "B" },
+            { id: 32, text: "WiFi (Wireless Fidelity) adalah teknologi jaringan nirkabel yang memungkinkan perangkat seperti HP, laptop, atau komputer terhubung ke internet...", options: { A: "Dengan kabel", B: "Tanpa jaringan", C: "Tanpa kabel", D: "Dengan flashdisk" }, answer: "C" },
+            { id: 33, text: "Kelebihan WiFi dibanding kabel adalah", options: { A: "Lebih mahal, sedikit pengguna (terbatas)", B: "Lebih stabil, biasa banyak pengguna", C: "Mudah dipindahkan, tidak stabil", D: "Banyak kabel, kurang stabil" }, answer: "C" },
+            { id: 34, text: "Kekurangan tethering adalah ...", options: { A: "Tidak praktis, sering gangguan", B: "Boros baterai, kuota cepat habis", C: "Tidak aman, kuota cepat habis", D: "Tidak bisa digunakan, sering gangguan" }, answer: "B" },
+            { id: 35, text: "Enkripsi adalah proses mengubah data asli (plaintext) menjadi kode rahasia (ciphertext) agar tidak dapat dibaca oleh orang yang tidak berwenang. Data hanya bisa dibuka kembali menggunakan kunci (key) tertentu melalui proses dekripsi. Berdasarkan pernyataan 'Enkripsi adalah proses...", options: { A: "Menghapus data", B: "Menyembunyikan data", C: "Menggandakan data", D: "Memindahkan data" }, answer: "B" },
+            { id: 36, text: "Proses pengumpulan dan pengorganisasian data untuk menarik kesimpulan yang berguna dari data tersebut, meruapakan pengertian dari...", options: { A: "Data", B: "Analisis Data", C: "Olah Data", D: "Informasi" }, answer: "B" },
+            { id: 37, text: "Jenis Data non numerik, bersifat deskriptip, naratif, atau visual (gambar/audio) yang digunakan untuk menjelaskan kualitas, pengalaman, opini atau fenomena social adalah jenis data", options: { A: "Kualitatif", B: "Kuantitatif", C: "Kolektif", D: "Spesifik" }, answer: "A" },
+            { id: 38, text: "Perhatikan langkah-langkah berikut dibawah ini:\n1. Klik Save As\n2. Isikan nama file\n3. klik menu File\n4. Tentukan lokasi folder penyimpanan\nUrutan menyimpan dokumen dalam Microsoft Excel yang benar adalah", options: { A: "3-4-1-2", B: "3-4-2-1", C: "3-1-4-2", D: "3-1-2-4" }, answer: "C" },
+            { id: 39, text: "Data nilai pertama terletak pada cell B3 dan data terakhir terletak pada baris ke 12 kolom B. Untuk menentukan nilai tertinggi dari daftar nilai tersebut rumus/formula yang tepat di gunakan adalah...", options: { A: "MAX (A1:A10)", B: "MAX(B1:B10)", C: "MAX(B3:B12)", D: "SUM(B3:B12)" }, answer: "C" },
+            { id: 40, text: "Dalam Microsoft excel atau spredsheet kita sering melihat tampilan nya berupa kotak-kotak semu. Yang dimaksud dengan sel (Cell) dalam excel/spreedsheet tersebut adalah....", options: { A: "Kumpulan dari worksheet", B: "Kumpulan beberapa sel", C: "Pertemuan antara baris dengan kolom", D: "Pertemuan antara sel dengan range" }, answer: "C" },
+            { id: 41, text: "Dalam microsoft excel kita mengenal istilah cell, baris, kolom dan range. Range dalam excel adalah....", options: { A: "Kumpulan dari worksheet", B: "Kumpulan dari beberapa cell", C: "Pertemuan antara baris dengan kolom", D: "Lembar kerja dalam excel" }, answer: "B" },
+            { 
+              id: 42, 
+              text: "Aplikasi software dengan ikon di atas yang sering digunakan untuk mengolah data berupa . . . . , nama aplikasi tersebut adalah... . .", 
+              illustration: `
+                <div class="flex justify-center my-4">
+                  <svg viewBox="0 0 100 100" class="w-24 h-24 drop-shadow-md">
+                    <rect x="10" y="10" width="80" height="80" rx="15" fill="#1D6F42" />
+                    <text x="50" y="72" font-size="65" font-family="Arial, sans-serif" font-weight="bold" fill="white" text-anchor="middle">X</text>
+                  </svg>
+                </div>
+              `,
+              options: { A: "Angka, Microsoft edge", B: "Slide persentasi, Microsoft power point", C: "Kata, Microsoft Word", D: "Angka, Microsoft Excel" }, 
+              answer: "D" 
+            },
+            { id: 43, text: "Untuk memfilter data dari A ke Z, atau Z ke A, kita dapat menggunakan menu", options: { A: "Data -> Sort and Filter", B: "Insert -> Chart", C: "Page Layout -> Print title", D: "Alignment" }, answer: "A" },
+            { 
+              id: 44, 
+              text: "Berdasarkan tabel Makanan Kegemaran Siswa SMP Damai di atas. Simpulan isi tabel tersebut adalah ...", 
+              illustration: `
+                <div class="overflow-x-auto mb-4 border rounded shadow-sm">
+                  <table class="min-w-full text-center text-sm bg-white">
+                    <thead class="bg-blue-100 text-blue-900 border-b-2 border-blue-200">
+                      <tr>
+                        <th class="px-4 py-2 border-r border-blue-200">Kelas</th>
+                        <th class="px-4 py-2 border-r border-blue-200">Bakso</th>
+                        <th class="px-4 py-2 border-r border-blue-200">Fried Chicken</th>
+                        <th class="px-4 py-2 border-r border-blue-200">Nasgor</th>
+                        <th class="px-4 py-2">Pizza</th>
+                      </tr>
+                    </thead>
+                    <tbody class="text-gray-700">
+                      <tr class="border-b"><td class="px-4 py-2 border-r font-bold bg-gray-50">VII</td><td class="px-4 py-2 border-r">40</td><td class="px-4 py-2 border-r">25</td><td class="px-4 py-2 border-r">20</td><td class="px-4 py-2">10</td></tr>
+                      <tr class="border-b"><td class="px-4 py-2 border-r font-bold bg-gray-50">VIII</td><td class="px-4 py-2 border-r">20</td><td class="px-4 py-2 border-r">20</td><td class="px-4 py-2 border-r">10</td><td class="px-4 py-2">30</td></tr>
+                      <tr><td class="px-4 py-2 border-r font-bold bg-gray-50">IX</td><td class="px-4 py-2 border-r">15</td><td class="px-4 py-2 border-r">30</td><td class="px-4 py-2 border-r">10</td><td class="px-4 py-2">15</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              `,
+              options: { A: "Siswa kelas VII paling banyak yang menyukai bakso.", B: "Makanan nasi goreng tidak terlalu disukai, karena terlalu mahal harganya.", C: "Makanan kegemaran siswa SMP Damai tiap jenjang kelas, berbeda-beda.", D: "Makanan yg digemari siswa SMP Damai mahal harganya, tetapi enak rasanya." }, 
+              answer: "A" 
+            },
+            { 
+              id: 45, 
+              text: "Berdasarkan grafik data berat badan siswa di atas, banyak siswa yang memiliki berat badan 44 Kg adalah...", 
+              illustration: `
+                <div class="flex justify-center mb-4">
+                  <svg viewBox="0 0 400 220" class="w-full max-w-lg bg-white border rounded shadow-sm p-4">
+                    <line x1="40" y1="180" x2="380" y2="180" stroke="#374151" stroke-width="2"/>
+                    <line x1="40" y1="20" x2="40" y2="180" stroke="#374151" stroke-width="2"/>
+                    
+                    <line x1="35" y1="180" x2="380" y2="180" stroke="#E5E7EB" stroke-width="1"/><text x="30" y="180" font-size="12" text-anchor="end" alignment-baseline="middle" fill="#6B7280">0</text>
+                    <line x1="35" y1="145" x2="380" y2="145" stroke="#E5E7EB" stroke-width="1"/><text x="30" y="145" font-size="12" text-anchor="end" alignment-baseline="middle" fill="#6B7280">5</text>
+                    <line x1="35" y1="110" x2="380" y2="110" stroke="#E5E7EB" stroke-width="1"/><text x="30" y="110" font-size="12" text-anchor="end" alignment-baseline="middle" fill="#6B7280">10</text>
+                    <line x1="35" y1="75" x2="380" y2="75" stroke="#E5E7EB" stroke-width="1"/><text x="30" y="75" font-size="12" text-anchor="end" alignment-baseline="middle" fill="#6B7280">15</text>
+                    <line x1="35" y1="40" x2="380" y2="40" stroke="#E5E7EB" stroke-width="1"/><text x="30" y="40" font-size="12" text-anchor="end" alignment-baseline="middle" fill="#6B7280">20</text>
+
+                    <rect x="60" y="138" width="40" height="42" fill="#3B82F6" class="hover:fill-blue-400 transition-all"/><text x="80" y="198" font-size="12" text-anchor="middle" fill="#374151">40 kg</text><text x="80" y="133" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">6</text>
+                    <rect x="120" y="96" width="40" height="84" fill="#3B82F6" class="hover:fill-blue-400 transition-all"/><text x="140" y="198" font-size="12" text-anchor="middle" fill="#374151">41 kg</text><text x="140" y="91" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">12</text>
+                    <rect x="180" y="75" width="40" height="105" fill="#3B82F6" class="hover:fill-blue-400 transition-all"/><text x="200" y="198" font-size="12" text-anchor="middle" fill="#374151">42 kg</text><text x="200" y="70" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">15</text>
+                    <rect x="240" y="54" width="40" height="126" fill="#3B82F6" class="hover:fill-blue-400 transition-all"/><text x="260" y="198" font-size="12" text-anchor="middle" fill="#374151">43 kg</text><text x="260" y="49" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">18</text>
+                    <rect x="300" y="117" width="40" height="63" fill="#3B82F6" class="hover:fill-blue-400 transition-all"/><text x="320" y="198" font-size="12" text-anchor="middle" fill="#374151">44 kg</text><text x="320" y="112" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">9</text>
+
+                    <text x="210" y="215" font-size="14" font-weight="bold" text-anchor="middle" fill="#111827">Data Berat Badan Siswa</text>
+                  </svg>
+                </div>
+              `,
+              options: { A: "6", B: "12", C: "18", D: "9" }, 
+              answer: "D" 
+            },
+            { id: 46, text: "Ancaman digital adalah bahaya di dunia digital yang dapat merugikan pengguna dunia maya. Diantara ancaman digital adalah phising, malware, cyberbullying, dan peretasan. Phishing adalah ancaman digital berupa penipuan dengan cara...", options: { A: "Perangkat lunak pengaman", B: "Virus komputer", C: "Menyamar sebagai pihak terpercaya untuk mencuri data", D: "Sistem enkripsi" }, answer: "C" },
+            { id: 47, text: "Selain dampak positif yang ditimbulkan dari penggunaan teknologi juga terdapat Dampak negatif penggunaan teknologi informatika secara berlebihan adalah", options: { A: "Komunikasi menjadi lebih mudah", B: "Ketergantungan gawai", C: "Akses informasi semakin luas", D: "Proses belajar fleksibel" }, answer: "B" },
+            { id: 48, text: "Ketika menggunakan media sosial apalagi berinteraksi dengan seseoarang baik langsung atau pun tidak kita harus memiliki sikap yang baik. Sikap bijak saat menggunakan media sosial adalah", options: { A: "Mengunggah semua aktivitas pribadi", B: "Menyebarkan berita tanpa klarifikasi", C: "Mengecek informasi sebelum di share", D: "Menggunakan identitas palsu" }, answer: "C" },
+            { id: 49, text: "Kejahatan di dunia digital banyak macamnya salah satunya adalah cyberbullying. Cyberbullying merupakan", options: { A: "Pencurian data digital", B: "Perundungan melalui media digital", C: "Penyebaran virus komputer", D: "Perusakan perangkat keras" }, answer: "B" },
+            { id: 50, text: "Perangkat lunak yang menempel pada perangkat lunak lainnya dan menjalankan fungsi lain yang berbahaya seperti menghapus file, mengubah ekstensi nama file, menyembunyikan, mengirimkan surel dan lain lain. Hal diatas merupakan pengertian dari.", options: { A: "Worm", B: "Trojan horse", C: "Virus", D: "Phising" }, answer: "C" }
+        ];
+
+        // 2. VARIABEL STATE APLIKASI
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzc7py2Bpkw2lgtP7CsJbs9GP02yPNisxu0iceSy8qPLVMZLyrMJyTjsaZjt1h9UAksxA/exec"; 
+        
+        let formData = { nama: '', jenisKelamin: '', kelas: '', token: '' };
+        let currentQIndex = 0;
+        let answers = {};
+        let cheatCount = 0;
+        let isSubmitting = false;
+
+        // 3. LOGIC FORM LOGIN
+        document.getElementById('form-login').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const tokenInput = document.getElementById('input-token').value.toUpperCase();
+            
+            if (tokenInput !== 'INFOR918') {
+                alert('Token salah! Silakan masukkan token yang benar.');
+                return;
+            }
+
+            // Simpan Data
+            formData.nama = document.getElementById('input-nama').value;
+            formData.jenisKelamin = document.querySelector('input[name="jk"]:checked').value;
+            formData.kelas = document.getElementById('input-kelas').value;
+            formData.token = tokenInput;
+
+            // Update UI Header
+            document.getElementById('display-nama').textContent = formData.nama;
+            document.getElementById('display-kelas').textContent = 'Kelas: ' + formData.kelas;
+
+            // Pindah Layar
+            document.getElementById('stage-login').classList.add('hidden-stage');
+            document.getElementById('stage-exam').classList.remove('hidden-stage');
+
+            // Render Pertama
+            renderQuestion();
+            renderNav();
+            setupCheatDetection();
+        });
+
+        // 4. LOGIC RENDER SOAL
+        function renderQuestion() {
+            const q = questions[currentQIndex];
+            
+            // Text Soal
+            document.getElementById('q-title').textContent = 'Soal No. ' + q.id;
+            document.getElementById('q-text').textContent = q.text;
+
+            // Gambar / Ilustrasi (jika ada)
+            const illContainer = document.getElementById('q-illustration');
+            if (q.illustration) {
+                illContainer.innerHTML = q.illustration;
+                illContainer.classList.remove('hidden-stage');
+            } else {
+                illContainer.innerHTML = '';
+                illContainer.classList.add('hidden-stage');
+            }
+
+            // Opsi Jawaban
+            const optsContainer = document.getElementById('q-options');
+            optsContainer.innerHTML = '';
+            
+            for (const [key, val] of Object.entries(q.options)) {
+                const isSelected = answers[q.id] === key;
+                
+                // Buat div pembungkus opsi
+                const div = document.createElement('div');
+                div.className = `p-3 border rounded cursor-pointer transition flex items-start ${isSelected ? 'bg-blue-100 border-blue-500' : 'hover:bg-gray-50 border-gray-300'}`;
+                div.onclick = function() {
+                    answers[q.id] = key;
+                    renderQuestion();
+                    renderNav();
+                };
+
+                // Bulatan huruf A/B/C/D
+                const spanLetter = document.createElement('span');
+                spanLetter.className = `w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full mr-3 text-sm font-bold ${isSelected ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`;
+                spanLetter.textContent = key;
+
+                // Teks Jawaban
+                const spanText = document.createElement('span');
+                spanText.className = 'text-gray-700 mt-0.5';
+                spanText.textContent = val;
+
+                div.appendChild(spanLetter);
+                div.appendChild(spanText);
+                optsContainer.appendChild(div);
+            }
+
+            // Atur tombol prev/next
+            document.getElementById('btn-prev').disabled = currentQIndex === 0;
+            if (currentQIndex === 0) {
+                document.getElementById('btn-prev').classList.add('opacity-50');
+            } else {
+                document.getElementById('btn-prev').classList.remove('opacity-50');
+            }
+
+            if (currentQIndex < questions.length - 1) {
+                document.getElementById('btn-next').style.display = 'block';
+            } else {
+                document.getElementById('btn-next').style.display = 'none';
+            }
+        }
+
+        // 5. LOGIC NAVIGASI (KOTAK KANAN)
+        function renderNav() {
+            const navContainer = document.getElementById('nav-grid');
+            navContainer.innerHTML = '';
+            
+            questions.forEach((q, idx) => {
+                const isSelected = answers[q.id] !== undefined;
+                const isCurrent = currentQIndex === idx;
+
+                const btn = document.createElement('button');
+                btn.className = `w-full aspect-square text-sm font-bold rounded flex items-center justify-center border transition-all duration-200 `;
+                
+                if (isCurrent) btn.className += 'ring-2 ring-offset-2 ring-blue-500 ';
+                
+                if (isSelected) {
+                    btn.className += 'bg-green-500 text-white border-green-600';
+                } else {
+                    btn.className += 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200';
+                }
+
+                btn.textContent = q.id;
+                btn.onclick = function() {
+                    currentQIndex = idx;
+                    renderQuestion();
+                    renderNav();
+                };
+                
+                navContainer.appendChild(btn);
+            });
+        }
+
+        function prevQ() {
+            if (currentQIndex > 0) {
+                currentQIndex--;
+                renderQuestion();
+                renderNav();
+            }
+        }
+
+        function nextQ() {
+            if (currentQIndex < questions.length - 1) {
+                currentQIndex++;
+                renderQuestion();
+                renderNav();
+            }
+        }
+
+        // 6. DETEKSI KECURANGAN
+        function setupCheatDetection() {
+            document.addEventListener("visibilitychange", function() {
+                const examStageIsActive = !document.getElementById('stage-exam').classList.contains('hidden-stage');
+                // Jika tab di-minimize atau pindah layar
+                if (document.hidden && examStageIsActive) {
+                    cheatCount++;
+                    
+                    // Update Angka
+                    document.getElementById('display-cheat').textContent = cheatCount;
+                    document.getElementById('modal-cheat-count').textContent = cheatCount;
+                    document.getElementById('modal-cheat-points').textContent = cheatCount * 2;
+                    
+                    // Tampilkan Peringatan
+                    document.getElementById('modal-cheat').classList.remove('hidden-stage');
+                }
+            });
+        }
+
+        function hideCheatModal() {
+            document.getElementById('modal-cheat').classList.add('hidden-stage');
+        }
+
+        // 7. MODAL PENGIRIMAN
+        function showSubmitModal() {
+            if (isSubmitting) return;
+
+            const answeredCount = Object.keys(answers).length;
+            const totalQuestions = questions.length;
+            
+            document.getElementById('submit-answered').textContent = answeredCount;
+
+            if (answeredCount < totalQuestions) {
+                document.getElementById('submit-warning').classList.remove('hidden-stage');
+                document.getElementById('submit-safe').classList.add('hidden-stage');
+            } else {
+                document.getElementById('submit-warning').classList.add('hidden-stage');
+                document.getElementById('submit-safe').classList.remove('hidden-stage');
+            }
+
+            document.getElementById('modal-submit').classList.remove('hidden-stage');
+        }
+
+        function hideSubmitModal() {
+            document.getElementById('modal-submit').classList.add('hidden-stage');
+        }
+
+        // 8. EKSEKUSI PENGIRIMAN DATA
+        async function executeSubmit() {
+            hideSubmitModal();
+            isSubmitting = true;
+            document.getElementById('btn-kirim').textContent = "Mengirim Data...";
+            document.getElementById('btn-kirim').classList.add('opacity-70');
+            
+            // Kalkulasi Skor
+            let correct = 0;
+            questions.forEach(q => {
+                if (answers[q.id] === q.answer) correct++;
+            });
+            
+            const poinBenar = correct * 2; 
+            const poinPengurangan = cheatCount * 2;
+            let totalScore = poinBenar - poinPengurangan;
+            if (totalScore < 0) totalScore = 0;
+
+            const payload = {
+                nama: formData.nama,
+                jenisKelamin: formData.jenisKelamin,
+                kelas: formData.kelas,
+                skor: totalScore,
+                kecurangan: cheatCount,
+                detailJawaban: JSON.stringify(answers)
+            };
+
+            // Kirim ke Google Apps Script
+            try {
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+            } catch (error) {
+                console.error("Gagal mengirim:", error);
+            }
+
+            // Apapun hasil fetch (karena no-cors tidak bisa di-track statusnya), kita ke result
+            showResultScreen(correct, questions.length - correct, poinBenar, totalScore);
+        }
+
+        // 9. RENDER HASIL
+        function showResultScreen(benar, salah, skorKotor, skorAkhir) {
+            document.getElementById('stage-exam').classList.add('hidden-stage');
+            document.getElementById('stage-result').classList.remove('hidden-stage');
+
+            document.getElementById('res-nama').textContent = formData.nama;
+            document.getElementById('res-benar').textContent = benar;
+            document.getElementById('res-salah').textContent = salah;
+            document.getElementById('res-kotor').textContent = skorKotor;
+            document.getElementById('res-cheat').textContent = `${cheatCount}x (-${cheatCount * 2})`;
+            document.getElementById('res-akhir').textContent = skorAkhir;
+        }
+    </script>
+</body>
+</html>
